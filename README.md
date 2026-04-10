@@ -1,5 +1,7 @@
 # note
 
+[![Tests](https://github.com/jamessimas/note/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/jamessimas/note/actions/workflows/test.yml)
+
 A single-file Python CLI for managing personal notes. No dependencies beyond the standard library.
 
 ## Setup

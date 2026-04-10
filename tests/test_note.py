@@ -8,7 +8,18 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from note import cmd_archive, cmd_new, cmd_temp, get_editor, get_notes_dir, get_temp_dir
+import subprocess
+import time
+
+from note import (
+    cmd_archive,
+    cmd_new,
+    cmd_recent,
+    cmd_temp,
+    get_editor,
+    get_notes_dir,
+    get_temp_dir,
+)
 
 
 class TestGetNotesDir(unittest.TestCase):
@@ -333,6 +344,109 @@ class TestCmdArchive(unittest.TestCase):
         output = mock_stdout.getvalue()
         self.assertIn("Archived:", output)
         self.assertIn("note.txt", output)
+
+
+class TestCmdRecent(unittest.TestCase):
+    """Tests for cmd_recent()."""
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.notes_root = Path(self._tmpdir.name)
+        self.notes_path = self.notes_root / "notes"
+        self.notes_path.mkdir(parents=True)
+
+        self.env_patch = patch.dict(
+            "os.environ",
+            {
+                "PERSONAL_NOTES_DIR": str(self.notes_root),
+                "PERSONAL_NOTES_EDITOR": "vim",
+            },
+        )
+        self.env_patch.start()
+
+        self.popen_patch = patch("note.subprocess.Popen")
+        self.mock_popen = self.popen_patch.start()
+
+    def tearDown(self):
+        self.popen_patch.stop()
+        self.env_patch.stop()
+        self._tmpdir.cleanup()
+
+    def _make_note(self, name):
+        """Create a note file in the notes directory and return its path."""
+        filepath = self.notes_path / name
+        filepath.touch()
+        return filepath
+
+    def _fzf_result(self, returncode=0, selected=None):
+        """Return a mock CompletedProcess simulating fzf output."""
+        stdout = "\n".join(selected or []) + ("\n" if selected else "")
+        return subprocess.CompletedProcess(
+            args=[], returncode=returncode, stdout=stdout, stderr=""
+        )
+
+    def test_exits_when_no_notes(self):
+        with patch("note.subprocess.run") as mock_run:
+            with patch("sys.stderr", new_callable=io.StringIO) as mock_stderr:
+                with self.assertRaises(SystemExit) as ctx:
+                    cmd_recent(Namespace(count=5))
+        self.assertEqual(ctx.exception.code, 1)
+        self.assertIn("No notes found", mock_stderr.getvalue())
+        mock_run.assert_not_called()
+
+    def test_passes_files_to_fzf(self):
+        note = self._make_note("a.txt")
+        with patch("note.subprocess.run", return_value=self._fzf_result(1)) as mock_run:
+            with self.assertRaises(SystemExit):
+                cmd_recent(Namespace(count=5))
+        fzf_input = mock_run.call_args[1]["input"]
+        self.assertIn(str(note), fzf_input)
+
+    def test_respects_count(self):
+        for i in range(5):
+            self._make_note(f"note_{i}.txt")
+            time.sleep(0.01)  # ensure distinct mtimes
+        with patch("note.subprocess.run", return_value=self._fzf_result(1)) as mock_run:
+            with self.assertRaises(SystemExit):
+                cmd_recent(Namespace(count=2))
+        fzf_input = mock_run.call_args[1]["input"]
+        self.assertEqual(len(fzf_input.strip().splitlines()), 2)
+
+    def test_sorts_by_mtime_descending(self):
+        oldest = self._make_note("old.txt")
+        time.sleep(0.01)
+        newest = self._make_note("new.txt")
+        with patch("note.subprocess.run", return_value=self._fzf_result(1)) as mock_run:
+            with self.assertRaises(SystemExit):
+                cmd_recent(Namespace(count=5))
+        lines = mock_run.call_args[1]["input"].strip().splitlines()
+        self.assertEqual(lines[0], str(newest))
+        self.assertEqual(lines[1], str(oldest))
+
+    def test_opens_selected_files(self):
+        note1 = self._make_note("a.txt")
+        note2 = self._make_note("b.txt")
+        selected = [str(note1), str(note2)]
+        with patch("note.subprocess.run", return_value=self._fzf_result(0, selected)):
+            cmd_recent(Namespace(count=5))
+        self.assertEqual(self.mock_popen.call_count, 2)
+        opened = [call[0][0] for call in self.mock_popen.call_args_list]
+        self.assertTrue(any(str(note1) in cmd for cmd in opened))
+        self.assertTrue(any(str(note2) in cmd for cmd in opened))
+
+    def test_exits_cleanly_when_fzf_cancelled(self):
+        self._make_note("a.txt")
+        with patch("note.subprocess.run", return_value=self._fzf_result(1)):
+            with self.assertRaises(SystemExit) as ctx:
+                cmd_recent(Namespace(count=5))
+        self.assertEqual(ctx.exception.code, 0)
+
+    def test_no_popen_when_fzf_cancelled(self):
+        self._make_note("a.txt")
+        with patch("note.subprocess.run", return_value=self._fzf_result(1)):
+            with self.assertRaises(SystemExit):
+                cmd_recent(Namespace(count=5))
+        self.mock_popen.assert_not_called()
 
 
 if __name__ == "__main__":

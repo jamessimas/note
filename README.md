@@ -32,6 +32,14 @@ options:
   -h, --help            show this help message and exit
 ```
 
+## Testing
+
+Run unit tests:
+
+```sh
+make test
+```
+
 ## Notes format
 
 Notes are plain text files stored as `YYYY-MM-DD_slug_name.txt` under `$PERSONAL_NOTES_DIR/notes/<YYYY>/`.

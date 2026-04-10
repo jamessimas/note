@@ -163,14 +163,14 @@ def main():
         help="Optional name of the note (random if omitted)",
     )
 
-    subparsers.add_parser("recent", help="Open the most recently edited note")
-
     find_parser = subparsers.add_parser("find", help="Find and open notes")
     find_parser.add_argument(
         "query",
         nargs="*",
         help="Optional initial search query for fzf",
     )
+
+    subparsers.add_parser("recent", help="Open the most recently edited note")
 
     args = parser.parse_args()
 

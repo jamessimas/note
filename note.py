@@ -9,6 +9,9 @@ from datetime import date
 from pathlib import Path
 
 
+DEFAULT_RECENT_COUNT = 5
+
+
 def get_notes_dir():
     """Return the $PERSONAL_NOTES_DIR directory or exit with an error."""
     notes_dir = os.environ.get("PERSONAL_NOTES_DIR")
@@ -90,7 +93,7 @@ def cmd_temp(args):
 
 
 def cmd_recent(args):
-    """Open the most recently edited note in $PERSONAL_NOTES_EDITOR."""
+    """Select from the 5 most recently edited notes via fzf."""
     notes_dir = get_notes_dir()
     editor = get_editor()
 
@@ -101,8 +104,29 @@ def cmd_recent(args):
         print("Error: No notes found.", file=sys.stderr)
         sys.exit(1)
 
-    most_recent = max(files, key=lambda f: f.stat().st_mtime)
-    subprocess.Popen(f"{editor} {most_recent}", shell=True)
+    files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+    recent = [str(f) for f in files[: args.count]]
+
+    fzf_cmd = [
+        "fzf",
+        "--preview",
+        "bat --color always {}",
+        "--multi",
+    ]
+
+    result = subprocess.run(
+        fzf_cmd,
+        input="\n".join(recent),
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        sys.exit(0)
+
+    selected = [f for f in result.stdout.strip().splitlines() if f]
+    for filepath in selected:
+        subprocess.Popen(f"{editor} {filepath}", shell=True)
 
 
 def cmd_find(args):
@@ -170,7 +194,16 @@ def main():
         help="Optional initial search query for fzf",
     )
 
-    subparsers.add_parser("recent", help="Open the most recently edited note")
+    recent_parser = subparsers.add_parser(
+        "recent",
+        help=f"Find recently edited notes (default: {DEFAULT_RECENT_COUNT})",
+    )
+    recent_parser.add_argument(
+        "--count",
+        type=int,
+        default=DEFAULT_RECENT_COUNT,
+        help=f"Number of recent notes to show (default: {DEFAULT_RECENT_COUNT})",
+    )
 
     args = parser.parse_args()
 

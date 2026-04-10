@@ -8,7 +8,7 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from note import cmd_new, get_editor, get_notes_dir, get_temp_dir
+from note import cmd_new, cmd_temp, get_editor, get_notes_dir, get_temp_dir
 
 
 class TestGetNotesDir(unittest.TestCase):
@@ -165,6 +165,85 @@ class TestCmdNew(unittest.TestCase):
         cmd_str = call_args[0][0]
         self.assertIn("vim", cmd_str)
         self.assertIn("2025-07-15_my_note.txt", cmd_str)
+        self.assertTrue(call_args[1]["shell"])
+
+
+class TestCmdTemp(unittest.TestCase):
+    """Tests for cmd_temp()."""
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.tmpdir = self._tmpdir.name
+
+        self.env_patch = patch.dict(
+            "os.environ",
+            {
+                "PERSONAL_NOTES_TEMP_DIR": self.tmpdir,
+                "PERSONAL_NOTES_EDITOR": "vim",
+            },
+        )
+        self.env_patch.start()
+
+        self.date_patch = patch("note.date")
+        self.mock_date = self.date_patch.start()
+        self.mock_date.today.return_value = FAKE_DATE
+        self.mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+
+        self.popen_patch = patch("note.subprocess.Popen")
+        self.mock_popen = self.popen_patch.start()
+
+    def tearDown(self):
+        self.popen_patch.stop()
+        self.date_patch.stop()
+        self.env_patch.stop()
+        self._tmpdir.cleanup()
+
+    def _expected_file(self, slug):
+        return Path(self.tmpdir) / f"2025-07-15_{slug}.txt"
+
+    def test_creates_file_with_name(self):
+        cmd_temp(Namespace(name=["My", "Temp"]))
+        filepath = self._expected_file("my_temp")
+        self.assertTrue(filepath.exists())
+        self.assertEqual(filepath.read_text(), "")
+
+    @patch("note.os.urandom", return_value=b"\xab\xcd")
+    def test_creates_file_without_name(self, _mock_urandom):
+        cmd_temp(Namespace(name=[]))
+        filepath = self._expected_file("abcd")
+        self.assertTrue(filepath.exists())
+
+    @patch("note.os.urandom", return_value=b"\xab\xcd")
+    def test_random_slug_when_no_name(self, _mock_urandom):
+        cmd_temp(Namespace(name=[]))
+        files = list(Path(self.tmpdir).iterdir())
+        self.assertEqual(len(files), 1)
+        self.assertIn("abcd", files[0].name)
+
+    def test_slug_is_lowercased(self):
+        cmd_temp(Namespace(name=["UPPER"]))
+        filepath = self._expected_file("upper")
+        self.assertTrue(filepath.exists())
+
+    def test_files_in_temp_dir_directly(self):
+        cmd_temp(Namespace(name=["My", "Temp"]))
+        filepath = self._expected_file("my_temp")
+        self.assertEqual(filepath.parent, Path(self.tmpdir))
+
+    def test_prints_created_temp_message(self):
+        with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            cmd_temp(Namespace(name=["My", "Temp"]))
+        output = mock_stdout.getvalue()
+        self.assertIn("Created temp file:", output)
+        self.assertIn("2025-07-15_my_temp.txt", output)
+
+    def test_opens_editor(self):
+        cmd_temp(Namespace(name=["My", "Temp"]))
+        self.mock_popen.assert_called_once()
+        call_args = self.mock_popen.call_args
+        cmd_str = call_args[0][0]
+        self.assertIn("vim", cmd_str)
+        self.assertIn("2025-07-15_my_temp.txt", cmd_str)
         self.assertTrue(call_args[1]["shell"])
 
 

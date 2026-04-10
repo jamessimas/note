@@ -14,7 +14,8 @@ def get_notes_dir():
     notes_dir = os.environ.get("PERSONAL_NOTES_DIR")
     if not notes_dir:
         print(
-            "Error: $PERSONAL_NOTES_DIR environment variable is not set.", file=sys.stderr
+            "Error: $PERSONAL_NOTES_DIR environment variable is not set.",
+            file=sys.stderr,
         )
         sys.exit(1)
     return notes_dir
@@ -24,7 +25,10 @@ def get_editor():
     """Return the $PERSONAL_NOTES_EDITOR value or exit with an error."""
     editor = os.environ.get("PERSONAL_NOTES_EDITOR")
     if not editor:
-        print("Error: $PERSONAL_NOTES_EDITOR environment variable is not set.", file=sys.stderr)
+        print(
+            "Error: $PERSONAL_NOTES_EDITOR environment variable is not set.",
+            file=sys.stderr,
+        )
         sys.exit(1)
     return editor
 

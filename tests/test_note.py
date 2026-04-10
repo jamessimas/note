@@ -237,6 +237,11 @@ class TestCmdTemp(unittest.TestCase):
         filepath = self._expected_file("upper")
         self.assertTrue(filepath.exists())
 
+    def test_multi_word_name(self):
+        cmd_temp(Namespace(name=["One", "Two"]))
+        filepath = self._expected_file("one_two")
+        self.assertTrue(filepath.exists())
+
     def test_files_in_temp_dir_directly(self):
         cmd_temp(Namespace(name=["My", "Temp"]))
         filepath = self._expected_file("my_temp")
@@ -338,6 +343,21 @@ class TestCmdArchive(unittest.TestCase):
         cmd_archive(Namespace(files=["nonexistent.txt", str(good)]))
         self.assertTrue((self.archive_path / "good.txt").exists())
 
+    def test_archive_dir_already_exists(self):
+        self.archive_path.mkdir(parents=True)
+        src = self._make_note("note.txt", "content")
+        cmd_archive(Namespace(files=[str(src)]))
+        self.assertTrue((self.archive_path / "note.txt").exists())
+
+    def test_file_in_subdirectory_inside_notes_dir(self):
+        subdir = self.notes_root / "subdir"
+        subdir.mkdir()
+        src = subdir / "note.txt"
+        src.write_text("content")
+        cmd_archive(Namespace(files=[str(src)]))
+        self.assertFalse(src.exists())
+        self.assertTrue((self.archive_path / "note.txt").exists())
+
     def test_prints_archived_message(self):
         src = self._make_note("note.txt")
         with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
@@ -434,6 +454,15 @@ class TestCmdRecent(unittest.TestCase):
         opened = [call[0][0] for call in self.mock_popen.call_args_list]
         self.assertTrue(any(str(note1) in cmd for cmd in opened))
         self.assertTrue(any(str(note2) in cmd for cmd in opened))
+
+    def test_count_larger_than_available_files(self):
+        for name in ("a.txt", "b.txt", "c.txt"):
+            self._make_note(name)
+        with patch("note.subprocess.run", return_value=self._fzf_result(1)) as mock_run:
+            with self.assertRaises(SystemExit):
+                cmd_recent(Namespace(count=10))
+        fzf_input = mock_run.call_args[1]["input"]
+        self.assertEqual(len(fzf_input.strip().splitlines()), 3)
 
     def test_exits_cleanly_when_fzf_cancelled(self):
         self._make_note("a.txt")

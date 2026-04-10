@@ -57,6 +57,8 @@ def cmd_new(args):
     filepath = folder / f"{date_prefix}_{slug}.txt"
     filepath.touch()
 
+    print(f"Created file: {filepath}")
+
     subprocess.Popen(f"{editor} {filepath}", shell=True)
 
 
@@ -77,6 +79,8 @@ def cmd_temp(args):
 
     filepath = folder / f"{date_prefix}_{slug}.txt"
     filepath.touch()
+
+    print(f"Created temp file: {filepath}")
 
     subprocess.Popen(f"{editor} {filepath}", shell=True)
 

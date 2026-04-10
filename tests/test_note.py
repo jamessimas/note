@@ -8,7 +8,7 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from note import cmd_new, cmd_temp, get_editor, get_notes_dir, get_temp_dir
+from note import cmd_archive, cmd_new, cmd_temp, get_editor, get_notes_dir, get_temp_dir
 
 
 class TestGetNotesDir(unittest.TestCase):
@@ -245,6 +245,94 @@ class TestCmdTemp(unittest.TestCase):
         self.assertIn("vim", cmd_str)
         self.assertIn("2025-07-15_my_temp.txt", cmd_str)
         self.assertTrue(call_args[1]["shell"])
+
+
+class TestCmdArchive(unittest.TestCase):
+    """Tests for cmd_archive()."""
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.notes_root = Path(self._tmpdir.name)
+        self.archive_path = self.notes_root / ".archive"
+
+        self.env_patch = patch.dict(
+            "os.environ", {"PERSONAL_NOTES_DIR": str(self.notes_root)}
+        )
+        self.env_patch.start()
+
+    def tearDown(self):
+        self.env_patch.stop()
+        self._tmpdir.cleanup()
+
+    def _make_note(self, name, content=""):
+        """Create a note file inside notes_root and return its path."""
+        filepath = self.notes_root / name
+        filepath.write_text(content)
+        return filepath
+
+    def test_creates_archive_directory(self):
+        src = self._make_note("note.txt")
+        cmd_archive(Namespace(files=[str(src)]))
+        self.assertTrue(self.archive_path.is_dir())
+
+    def test_moves_file_to_archive(self):
+        src = self._make_note("note.txt", "hello")
+        cmd_archive(Namespace(files=[str(src)]))
+        dest = self.archive_path / "note.txt"
+        self.assertFalse(src.exists())
+        self.assertTrue(dest.exists())
+        self.assertEqual(dest.read_text(), "hello")
+
+    def test_archives_multiple_files(self):
+        src1 = self._make_note("a.txt")
+        src2 = self._make_note("b.txt")
+        cmd_archive(Namespace(files=[str(src1), str(src2)]))
+        self.assertTrue((self.archive_path / "a.txt").exists())
+        self.assertTrue((self.archive_path / "b.txt").exists())
+        self.assertFalse(src1.exists())
+        self.assertFalse(src2.exists())
+
+    def test_collision_renames_with_counter(self):
+        src1 = self._make_note("note.txt", "first")
+        cmd_archive(Namespace(files=[str(src1)]))
+        src2 = self._make_note("note.txt", "second")
+        cmd_archive(Namespace(files=[str(src2)]))
+        self.assertTrue((self.archive_path / "note.txt").exists())
+        self.assertTrue((self.archive_path / "note_1.txt").exists())
+        self.assertEqual((self.archive_path / "note.txt").read_text(), "first")
+        self.assertEqual((self.archive_path / "note_1.txt").read_text(), "second")
+
+    def test_collision_counter_increments(self):
+        for i in range(3):
+            src = self._make_note("note.txt", str(i))
+            cmd_archive(Namespace(files=[str(src)]))
+        self.assertTrue((self.archive_path / "note.txt").exists())
+        self.assertTrue((self.archive_path / "note_1.txt").exists())
+        self.assertTrue((self.archive_path / "note_2.txt").exists())
+
+    def test_error_if_not_a_file(self):
+        with patch("sys.stderr", new_callable=io.StringIO) as mock_stderr:
+            cmd_archive(Namespace(files=[str(self.notes_root / "nonexistent.txt")]))
+        self.assertIn("is not a file", mock_stderr.getvalue())
+
+    def test_error_if_outside_notes_dir(self):
+        with tempfile.NamedTemporaryFile() as outside_file:
+            with patch("sys.stderr", new_callable=io.StringIO) as mock_stderr:
+                cmd_archive(Namespace(files=[outside_file.name]))
+        self.assertIn("PERSONAL_NOTES_DIR", mock_stderr.getvalue())
+
+    def test_skips_bad_file_continues_to_next(self):
+        good = self._make_note("good.txt")
+        cmd_archive(Namespace(files=["nonexistent.txt", str(good)]))
+        self.assertTrue((self.archive_path / "good.txt").exists())
+
+    def test_prints_archived_message(self):
+        src = self._make_note("note.txt")
+        with patch("sys.stdout", new_callable=io.StringIO) as mock_stdout:
+            cmd_archive(Namespace(files=[str(src)]))
+        output = mock_stdout.getvalue()
+        self.assertIn("Archived:", output)
+        self.assertIn("note.txt", output)
 
 
 if __name__ == "__main__":

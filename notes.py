@@ -21,10 +21,10 @@ def get_notes_dir():
 
 
 def get_editor():
-    """Return the $EDITOR value or exit with an error."""
-    editor = os.environ.get("EDITOR")
+    """Return the $PERSONAL_NOTES_EDITOR value or exit with an error."""
+    editor = os.environ.get("PERSONAL_NOTES_EDITOR")
     if not editor:
-        print("Error: $EDITOR environment variable is not set.", file=sys.stderr)
+        print("Error: $PERSONAL_NOTES_EDITOR environment variable is not set.", file=sys.stderr)
         sys.exit(1)
     return editor
 
@@ -33,11 +33,6 @@ def cmd_new(args):
     """Create a new note file and open it in $EDITOR."""
     notes_dir = get_notes_dir()
     editor = get_editor()
-
-    editor = os.environ.get("EDITOR")
-    if not editor:
-        print("Error: $EDITOR environment variable is not set.", file=sys.stderr)
-        sys.exit(1)
 
     today = date.today()
     year = today.strftime("%Y")

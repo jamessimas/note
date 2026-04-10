@@ -187,7 +187,7 @@ def main():
         help="Optional name of the note (random if omitted)",
     )
 
-    find_parser = subparsers.add_parser("find", help="Find and open notes")
+    find_parser = subparsers.add_parser("find", help="Find notes based on filename")
     find_parser.add_argument(
         "query",
         nargs="*",

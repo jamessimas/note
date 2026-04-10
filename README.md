@@ -15,10 +15,21 @@ export PERSONAL_NOTES_TEMP_DIR="$HOME/Downloads"  # directory for temporary note
 ## Usage
 
 ```sh
-python3 note.py new My Note Name         # create a permanent note
-python3 note.py temp [Optional Name]     # create a temp note (random slug if no name)
-python3 note.py recent                   # open most recently modified note
-python3 note.py find [optional query]    # fuzzy-find and open notes (requires fzf + bat)
+$ python3 note.py
+usage: note.py [-h] {new,temp,find,recent,archive} ...
+
+A simple CLI tool for creating notes.
+
+positional arguments:
+  {new,temp,find,recent,archive}
+    new                 Create a new note
+    temp                Create a temporary note
+    find                Find notes based on filename
+    recent              Find recently edited notes (default: 5)
+    archive             Archive notes
+
+options:
+  -h, --help            show this help message and exit
 ```
 
 ## Notes format

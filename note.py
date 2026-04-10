@@ -53,7 +53,7 @@ def cmd_new(args):
     today = date.today()
     year = today.strftime("%Y")
     date_prefix = today.strftime("%Y-%m-%d")
-    slug = "-".join(word.lower() for word in args.name)
+    slug = "_".join(word.lower() for word in args.name)
 
     folder = Path(notes_dir) / "notes" / year
     folder.mkdir(parents=True, exist_ok=True)
@@ -74,7 +74,7 @@ def cmd_temp(args):
     date_prefix = date.today().strftime("%Y-%m-%d")
 
     if args.name:
-        slug = "-".join(word.lower() for word in args.name)
+        slug = "_".join(word.lower() for word in args.name)
     else:
         slug = os.urandom(2).hex()
 

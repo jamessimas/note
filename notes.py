@@ -29,6 +29,18 @@ def get_editor():
     return editor
 
 
+def get_temp_dir():
+    """Return the $PERSONAL_NOTES_TEMP_DIR directory or exit with an error."""
+    temp_dir = os.environ.get("PERSONAL_NOTES_TEMP_DIR")
+    if not temp_dir:
+        print(
+            "Error: $PERSONAL_NOTES_TEMP_DIR environment variable is not set.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return temp_dir
+
+
 def cmd_new(args):
     """Create a new note file and open it in $EDITOR."""
     notes_dir = get_notes_dir()
@@ -40,6 +52,27 @@ def cmd_new(args):
     slug = "-".join(word.lower() for word in args.name)
 
     folder = Path(notes_dir) / "notes" / year
+    folder.mkdir(parents=True, exist_ok=True)
+
+    filepath = folder / f"{date_prefix}_{slug}.txt"
+    filepath.touch()
+
+    subprocess.Popen(f"{editor} {filepath}", shell=True)
+
+
+def cmd_temp(args):
+    """Create a temporary note file and open it in $EDITOR."""
+    temp_dir = get_temp_dir()
+    editor = get_editor()
+
+    date_prefix = date.today().strftime("%Y-%m-%d")
+
+    if args.name:
+        slug = "-".join(word.lower() for word in args.name)
+    else:
+        slug = os.urandom(2).hex()
+
+    folder = Path(temp_dir)
     folder.mkdir(parents=True, exist_ok=True)
 
     filepath = folder / f"{date_prefix}_{slug}.txt"
@@ -61,6 +94,13 @@ def main():
         help="The name of the note (e.g. My New Note)",
     )
 
+    temp_parser = subparsers.add_parser("temp", help="Create a temporary note")
+    temp_parser.add_argument(
+        "name",
+        nargs="*",
+        help="Optional name of the note (random if omitted)",
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -69,6 +109,8 @@ def main():
 
     if args.command == "new":
         cmd_new(args)
+    elif args.command == "temp":
+        cmd_temp(args)
 
 
 if __name__ == "__main__":

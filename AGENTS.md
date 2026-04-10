@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Single-file Python CLI tool (`note.py`) with zero dependencies (stdlib only). No packaging, no tests, no CI.
+Single-file Python CLI tool (`note.py`) with zero dependencies (stdlib only). No packaging, no CI.
 
 ## Running
 
@@ -25,6 +25,14 @@ Ruff with default config (no `ruff.toml` or `pyproject.toml`). Run manually:
 ```sh
 ruff check note.py
 ruff format note.py
+```
+
+## Testing
+
+Tests use the stdlib `unittest` module (no extra dependencies). Run them with:
+
+```sh
+python3 -m unittest discover -s tests
 ```
 
 ## Conventions

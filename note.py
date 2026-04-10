@@ -85,6 +85,22 @@ def cmd_temp(args):
     subprocess.Popen(f"{editor} {filepath}", shell=True)
 
 
+def cmd_recent(args):
+    """Open the most recently edited note in $EDITOR."""
+    notes_dir = get_notes_dir()
+    editor = get_editor()
+
+    notes_path = Path(notes_dir) / "notes"
+    files = [f for f in notes_path.rglob("*") if f.is_file()]
+
+    if not files:
+        print("Error: No notes found.", file=sys.stderr)
+        sys.exit(1)
+
+    most_recent = max(files, key=lambda f: f.stat().st_mtime)
+    subprocess.Popen(f"{editor} {most_recent}", shell=True)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="A simple CLI tool for creating notes.",
@@ -105,6 +121,8 @@ def main():
         help="Optional name of the note (random if omitted)",
     )
 
+    subparsers.add_parser("recent", help="Open the most recently edited note")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -115,6 +133,8 @@ def main():
         cmd_new(args)
     elif args.command == "temp":
         cmd_temp(args)
+    elif args.command == "recent":
+        cmd_recent(args)
 
 
 if __name__ == "__main__":

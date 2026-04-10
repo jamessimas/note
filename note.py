@@ -167,6 +167,40 @@ def cmd_find(args):
         subprocess.Popen(f"{editor} {filepath}", shell=True)
 
 
+def cmd_archive(args):
+    """Move notes to the archive folder."""
+    notes_dir = get_notes_dir()
+    notes_root = Path(notes_dir).resolve()
+    archive_path = notes_root / ".archive"
+    archive_path.mkdir(parents=True, exist_ok=True)
+
+    for filepath in args.files:
+        src = Path(filepath).resolve()
+
+        if not src.is_file():
+            print(f"Error: {filepath} is not a file.", file=sys.stderr)
+            continue
+
+        if notes_root not in src.parents:
+            print(
+                f"Error: {filepath} is not inside $PERSONAL_NOTES_DIR.",
+                file=sys.stderr,
+            )
+            continue
+
+        dest = archive_path / src.name
+        if dest.exists():
+            stem = src.stem
+            suffix = src.suffix
+            counter = 1
+            while dest.exists():
+                dest = archive_path / f"{stem}_{counter}{suffix}"
+                counter += 1
+
+        src.rename(dest)
+        print(f"Archived: {filepath} -> {dest}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="A simple CLI tool for creating notes.",
@@ -205,6 +239,13 @@ def main():
         help=f"Number of recent notes to show (default: {DEFAULT_RECENT_COUNT})",
     )
 
+    archive_parser = subparsers.add_parser("archive", help="Archive notes")
+    archive_parser.add_argument(
+        "files",
+        nargs="+",
+        help="File paths of notes to archive",
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -219,6 +260,8 @@ def main():
         cmd_recent(args)
     elif args.command == "find":
         cmd_find(args)
+    elif args.command == "archive":
+        cmd_archive(args)
 
 
 if __name__ == "__main__":

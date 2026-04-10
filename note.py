@@ -42,7 +42,7 @@ def get_temp_dir():
 
 
 def cmd_new(args):
-    """Create a new note file and open it in $EDITOR."""
+    """Create a new note file and open it in $PERSONAL_NOTES_EDITOR."""
     notes_dir = get_notes_dir()
     editor = get_editor()
 
@@ -63,7 +63,7 @@ def cmd_new(args):
 
 
 def cmd_temp(args):
-    """Create a temporary note file and open it in $EDITOR."""
+    """Create a temporary note file and open it in $PERSONAL_NOTES_EDITOR."""
     temp_dir = get_temp_dir()
     editor = get_editor()
 
@@ -86,7 +86,7 @@ def cmd_temp(args):
 
 
 def cmd_recent(args):
-    """Open the most recently edited note in $EDITOR."""
+    """Open the most recently edited note in $PERSONAL_NOTES_EDITOR."""
     notes_dir = get_notes_dir()
     editor = get_editor()
 

@@ -10,11 +10,11 @@ from pathlib import Path
 
 
 def get_notes_dir():
-    """Return the $PERSONAL_NOTES directory or exit with an error."""
-    notes_dir = os.environ.get("PERSONAL_NOTES")
+    """Return the $PERSONAL_NOTES_DIR directory or exit with an error."""
+    notes_dir = os.environ.get("PERSONAL_NOTES_DIR")
     if not notes_dir:
         print(
-            "Error: $PERSONAL_NOTES environment variable is not set.", file=sys.stderr
+            "Error: $PERSONAL_NOTES_DIR environment variable is not set.", file=sys.stderr
         )
         sys.exit(1)
     return notes_dir

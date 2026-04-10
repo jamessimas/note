@@ -105,6 +105,44 @@ def cmd_recent(args):
     subprocess.Popen(f"{editor} {most_recent}", shell=True)
 
 
+def cmd_find(args):
+    """Interactively find and open notes with fzf."""
+    notes_dir = get_notes_dir()
+    editor = get_editor()
+
+    notes_path = Path(notes_dir) / "notes"
+    files = [str(f) for f in notes_path.rglob("*") if f.is_file()]
+
+    if not files:
+        print("Error: No notes found.", file=sys.stderr)
+        sys.exit(1)
+
+    query = " ".join(args.query) if args.query else ""
+
+    fzf_cmd = [
+        "fzf",
+        "--preview",
+        "bat --color always {}",
+        "--multi",
+        "--query",
+        query,
+    ]
+
+    result = subprocess.run(
+        fzf_cmd,
+        input="\n".join(files),
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        sys.exit(0)
+
+    selected = [f for f in result.stdout.strip().splitlines() if f]
+    for filepath in selected:
+        subprocess.Popen(f"{editor} {filepath}", shell=True)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="A simple CLI tool for creating notes.",
@@ -127,6 +165,13 @@ def main():
 
     subparsers.add_parser("recent", help="Open the most recently edited note")
 
+    find_parser = subparsers.add_parser("find", help="Find and open notes")
+    find_parser.add_argument(
+        "query",
+        nargs="*",
+        help="Optional initial search query for fzf",
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -139,6 +184,8 @@ def main():
         cmd_temp(args)
     elif args.command == "recent":
         cmd_recent(args)
+    elif args.command == "find":
+        cmd_find(args)
 
 
 if __name__ == "__main__":

@@ -167,6 +167,13 @@ def cmd_find(args):
         subprocess.Popen(f"{editor} {filepath}", shell=True)
 
 
+def cmd_sync(args):
+    """Run `make sync` in $PERSONAL_NOTES_DIR."""
+    notes_dir = get_notes_dir()
+    result = subprocess.run(["make", "sync"], cwd=notes_dir)
+    sys.exit(result.returncode)
+
+
 def cmd_archive(args):
     """Move notes to the archive folder."""
     notes_dir = get_notes_dir()
@@ -246,6 +253,8 @@ def main():
         help="File paths of notes to archive",
     )
 
+    subparsers.add_parser("sync", help="Sync notes via make sync")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -262,6 +271,8 @@ def main():
         cmd_find(args)
     elif args.command == "archive":
         cmd_archive(args)
+    elif args.command == "sync":
+        cmd_sync(args)
 
 
 if __name__ == "__main__":

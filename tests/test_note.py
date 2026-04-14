@@ -16,6 +16,7 @@ from note import (
     cmd_find,
     cmd_new,
     cmd_recent,
+    cmd_sync,
     cmd_temp,
     get_editor,
     get_notes_dir,
@@ -579,6 +580,60 @@ class TestCmdFind(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 cmd_find(Namespace(query=[]))
         self.mock_popen.assert_not_called()
+
+
+class TestCmdSync(unittest.TestCase):
+    """Tests for cmd_sync()."""
+
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.notes_root = self._tmpdir.name
+
+        self.env_patch = patch.dict(
+            "os.environ", {"PERSONAL_NOTES_DIR": self.notes_root}
+        )
+        self.env_patch.start()
+
+    def tearDown(self):
+        self.env_patch.stop()
+        self._tmpdir.cleanup()
+
+    def _make_result(self, returncode):
+        return subprocess.CompletedProcess(
+            args=["make", "sync"], returncode=returncode, stdout="", stderr=""
+        )
+
+    def test_runs_make_sync_in_notes_dir(self):
+        with patch(
+            "note.subprocess.run", return_value=self._make_result(0)
+        ) as mock_run:
+            with self.assertRaises(SystemExit):
+                cmd_sync(Namespace())
+        mock_run.assert_called_once_with(["make", "sync"], cwd=self.notes_root)
+
+    def test_exits_zero_on_success(self):
+        with patch("note.subprocess.run", return_value=self._make_result(0)):
+            with self.assertRaises(SystemExit) as ctx:
+                cmd_sync(Namespace())
+        self.assertEqual(ctx.exception.code, 0)
+
+    def test_exits_one_on_failure(self):
+        with patch("note.subprocess.run", return_value=self._make_result(1)):
+            with self.assertRaises(SystemExit) as ctx:
+                cmd_sync(Namespace())
+        self.assertEqual(ctx.exception.code, 1)
+
+    def test_exits_with_make_return_code(self):
+        with patch("note.subprocess.run", return_value=self._make_result(2)):
+            with self.assertRaises(SystemExit) as ctx:
+                cmd_sync(Namespace())
+        self.assertEqual(ctx.exception.code, 2)
+
+    @patch.dict("os.environ", {}, clear=True)
+    def test_exits_when_notes_dir_missing(self):
+        with self.assertRaises(SystemExit) as ctx:
+            cmd_sync(Namespace())
+        self.assertEqual(ctx.exception.code, 1)
 
 
 if __name__ == "__main__":

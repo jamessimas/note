@@ -4,15 +4,21 @@
 
 A single-file Python CLI for managing personal notes. No dependencies beyond the standard library.
 
+Notes are plain text files stored as `YYYY-MM-DD_slug_name.txt` under `$PERSONAL_NOTES_DIR/notes/<YYYY>/<new note>`.
+
+Temp notes go to `$PERSONAL_NOTES_TEMP_DIR`.
+
 ## Setup
 
-Set these environment variables:
+1. Set these environment variables:
 
 ```sh
 export PERSONAL_NOTES_DIR="$HOME/personal-notes"  # root for permanent notes
 export PERSONAL_NOTES_EDITOR="subl -a"            # editor command for editing notes
 export PERSONAL_NOTES_TEMP_DIR="$HOME/Downloads"  # directory for temporary notes
 ```
+
+2. Copy `note.py` to `$HOME/bin/note.py`.
 
 ## Usage
 
@@ -42,9 +48,3 @@ Run unit tests:
 ```sh
 make test
 ```
-
-## Notes format
-
-Notes are plain text files stored as `YYYY-MM-DD_slug_name.txt` under `$PERSONAL_NOTES_DIR/notes/<YYYY>/`.
-
-Temp notes go to `$PERSONAL_NOTES_TEMP_DIR/`.

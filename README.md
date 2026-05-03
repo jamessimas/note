@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/jamessimas/note/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/jamessimas/note/actions/workflows/test.yml)
 
-A single-file Python CLI for managing personal notes. No dependencies beyond the standard library.
+A single-file Python 3 CLI for managing personal notes. No dependencies beyond the standard library.
 
 Notes are plain text files stored as `YYYY-MM-DD_slug_name.txt` under `$PERSONAL_NOTES_DIR/notes/<YYYY>/<new note>`.
 
@@ -23,7 +23,7 @@ export PERSONAL_NOTES_TEMP_DIR="$HOME/Downloads"  # directory for temporary note
 ## Usage
 
 ```sh
-$ python3 note.py
+$ note.py
 usage: note.py [-h] {new,temp,find,recent,archive,sync} ...
 
 A simple CLI tool for creating notes.

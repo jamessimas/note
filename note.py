@@ -134,7 +134,7 @@ def cmd_find(args):
     notes_dir = get_notes_dir()
     editor = get_editor()
 
-    notes_path = Path(notes_dir) / "notes"
+    notes_path = Path(notes_dir)
     files = [str(f) for f in notes_path.rglob("*") if f.is_file()]
 
     if not files:

@@ -10,7 +10,7 @@ Temp notes go to `$PERSONAL_NOTES_TEMP_DIR`.
 
 ## Setup
 
-1. Set these environment variables:
+**1. Set these environment variables:**
 
 ```sh
 export PERSONAL_NOTES_DIR="$HOME/personal-notes"  # root for permanent notes
@@ -18,9 +18,9 @@ export PERSONAL_NOTES_EDITOR="subl -a"            # editor command for editing n
 export PERSONAL_NOTES_TEMP_DIR="$HOME/Downloads"  # directory for temporary notes
 ```
 
-2. Copy `note.py` to `$HOME/bin/note.py`.
+**2. Copy `note.py` to `$HOME/bin/note.py`**
 
-3. Create Makefile
+**3. Create Makefile:**
 
 ```makefile
 # Get today's date and year dynamically

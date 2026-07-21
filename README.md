@@ -20,6 +20,34 @@ export PERSONAL_NOTES_TEMP_DIR="$HOME/Downloads"  # directory for temporary note
 
 2. Copy `note.py` to `$HOME/bin/note.py`.
 
+3. Create Makefile
+
+```makefile
+# Get today's date and year dynamically
+TODAY := $(shell date +%F)
+YEAR  := $(shell date +%Y)
+
+# Help
+## ==============================
+help: ## Show this help
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+.PHONY: daily
+daily: ## Create/open daily note
+	@mkdir -p "daily/$(YEAR)"
+	@subl daily/$(YEAR)/$(TODAY).md
+
+.PHONY: sync
+sync:
+	@git pull --autostash
+	@git add -u
+	@git add .archive/ || true
+	@git add logbooks/ notes/
+	@git diff --cached --quiet || git commit -m "Update note(s)"
+	@git push
+	@echo "Done syncing."
+```
+
 ## Usage
 
 ```sh

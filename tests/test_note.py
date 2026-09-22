@@ -581,6 +581,29 @@ class TestCmdFind(unittest.TestCase):
                 cmd_find(Namespace(query=[]))
         self.mock_popen.assert_not_called()
 
+    def test_excludes_git_directory(self):
+        note = self._make_note("a.txt")
+        git_dir = self.notes_root / ".git"
+        git_dir.mkdir()
+        (git_dir / "HEAD").touch()
+        (git_dir / "objects").mkdir()
+        (git_dir / "objects" / "pack.idx").touch()
+        with patch("note.subprocess.run", return_value=self._fzf_result(1)) as mock_run:
+            with self.assertRaises(SystemExit):
+                cmd_find(Namespace(query=[]))
+        fzf_input = mock_run.call_args[1]["input"]
+        self.assertIn(str(note), fzf_input)
+        self.assertNotIn(".git", fzf_input)
+
+    def test_finds_notes_outside_notes_subdir(self):
+        top_level_note = self.notes_root / "top.txt"
+        top_level_note.touch()
+        with patch("note.subprocess.run", return_value=self._fzf_result(1)) as mock_run:
+            with self.assertRaises(SystemExit):
+                cmd_find(Namespace(query=[]))
+        fzf_input = mock_run.call_args[1]["input"]
+        self.assertIn(str(top_level_note), fzf_input)
+
 
 class TestCmdSync(unittest.TestCase):
     """Tests for cmd_sync()."""

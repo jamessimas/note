@@ -135,7 +135,10 @@ def cmd_find(args):
     editor = get_editor()
 
     notes_path = Path(notes_dir)
-    files = [str(f) for f in notes_path.rglob("*") if f.is_file()]
+    files = []
+    for root, dirs, filenames in os.walk(notes_path):
+        dirs[:] = [d for d in dirs if d != ".git"]
+        files.extend(str(Path(root) / f) for f in filenames)
 
     if not files:
         print("Error: No notes found.", file=sys.stderr)
